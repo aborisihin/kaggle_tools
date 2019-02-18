@@ -4,6 +4,19 @@
 		"path": "/Volumes/sd_disk/......",
 		"train": "train.csv",
 		"test": "test.csv",
-		"sample_submission": "sample_submission.csv"
+		"submission_params":
+		{
+			"sample_file": "sample_submission.csv",
+			"target_fields": ["target"],
+			"submissions_dir": "...",
+			"pd_read_csv_params":
+			{
+			},
+			"pd_write_csv_params":
+			{
+				"header": true,
+				"index": false
+			}
+		}
 	}
 }

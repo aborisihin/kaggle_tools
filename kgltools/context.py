@@ -1,7 +1,7 @@
 import os
 import json
 
-from kgltools.data_io.submission_writer import SubmissionWriter
+from kgltools.data_tools import DataTools
 
 __all__ = ['KglToolsContext']
 
@@ -17,4 +17,4 @@ class KglToolsContext():
         	self.settings = json.load(param_file)
 
     def getDataTools():
-    	pass
+    	return DataTools(self.settings['data'])
