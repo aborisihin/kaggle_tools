@@ -1,0 +1,9 @@
+{
+	"data":
+	{
+		"path": "/Volumes/sd_disk/......",
+		"train": "train.csv",
+		"test": "test.csv",
+		"sample_submission": "sample_submission.csv"
+	}
+}
