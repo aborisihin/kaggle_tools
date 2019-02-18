@@ -1,14 +1,14 @@
 {
 	"data":
 	{
-		"path": "/Volumes/sd_disk/......",
+		"path": "/Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/santander",
 		"train": "train.csv",
 		"test": "test.csv",
 		"submission_params":
 		{
 			"sample_file": "sample_submission.csv",
 			"target_fields": ["target"],
-			"submissions_dir": "...",
+			"submissions_dir": "/Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/santander/submissions",
 			"pd_read_csv_params":
 			{
 			},
