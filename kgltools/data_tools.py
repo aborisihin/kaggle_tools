@@ -1,3 +1,7 @@
+""" data_tools module.
+Contains DataTools class for data-oriented tasks
+"""
+
 import os
 from datetime import datetime
 
@@ -12,11 +16,24 @@ __all__ = ['DataTools']
 
 
 class DataTools():
+    """ Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)
 
+    Args:
+        settings: Словарь с настройками окружения задачи
+
+    Attributes:
+        settings (dict): Словарь с настройками окружения задачи
+    """
     def __init__(self, settings: dict) -> None:
         self.settings = settings
 
     def write_submission(self, predictions: np.ndarray) -> bool:
+        """
+        Запись файла с предсказаниями в заданном формате
+
+        Args:
+            predictions: Вектор или матрица с предсказаниями
+        """
         submission_settings = self.settings['submission_params']
 
         sample_submission_path = os.path.join(self.settings['path'], submission_settings['sample_file'])
@@ -38,6 +55,18 @@ class DataTools():
     def get_validate_split(self,
                            X: pd.DataFrame,
                            y: Optional[pd.DataFrame] = None,
-                           validation_size: float = 0.2) -> Tuple[pd.DataFrame, pd.DataFrame]:
-        X_train, X_val = train_test_split(X, test_size=validation_size, shuffle=True, stratify=y)
-        return (X_train, X_val)
+                           validation_size: float = 0.2) -> Tuple[pd.DataFrame]:
+        """
+        Разбивка датасета на обучающую и валидационную выборки
+
+        Args:
+            X: Исходный датасет
+            y: Датасет (вектор) с истинными ответами
+            validation_size: Пропорция разбиения
+        """
+        if y is None:
+            X_t, X_v = train_test_split(X, test_size=validation_size, shuffle=True)
+            return (X_t, X_v)
+        else:
+            X_t, X_v, y_t, y_v = train_test_split(X, y, test_size=validation_size, shuffle=True, stratify=y)
+            return (X_t, X_v, y_t, y_v)
