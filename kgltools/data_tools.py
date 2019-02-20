@@ -20,12 +20,16 @@ class DataTools():
 
     Args:
         settings: Словарь с настройками окружения задачи
+        random_state: Инициализирующее random значение
 
     Attributes:
         settings (dict): Словарь с настройками окружения задачи
+        random_state (int): Инициализирующее random значение
     """
-    def __init__(self, settings: dict) -> None:
+
+    def __init__(self, settings: dict, random_state: int) -> None:
         self.settings = settings
+        self.random_state = random_state
 
     def write_submission(self, predictions: np.ndarray) -> bool:
         """
@@ -65,8 +69,10 @@ class DataTools():
             validation_size: Пропорция разбиения
         """
         if y is None:
-            X_t, X_v = train_test_split(X, test_size=validation_size, shuffle=True)
+            X_t, X_v = train_test_split(X, test_size=validation_size, shuffle=True,
+                                        random_state=self.random_state)
             return (X_t, X_v)
         else:
-            X_t, X_v, y_t, y_v = train_test_split(X, y, test_size=validation_size, shuffle=True, stratify=y)
+            X_t, X_v, y_t, y_v = train_test_split(X, y, test_size=validation_size, shuffle=True,
+                                                  stratify=y, random_state=self.random_state)
             return (X_t, X_v, y_t, y_v)
