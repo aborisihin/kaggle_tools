@@ -1,0 +1,24 @@
+{
+	"xgboost.sklearn.XGBClassifier":
+	{
+		"eta": [0.0, 1.0],
+		"gamma": [0.0, null],
+		"max_depth": [1, null],
+		"min_child_weight": [0, null],
+		"max_delta_step": [0, null],
+		"subsample": [0.0, 1.0],
+		"colsample_bytree": [0.0, 1.0],
+		"colsample_bylevel": [0.0, 1.0],
+		"colsample_bynode": [0.0, 1.0],
+		"reg_lambda": [0.0, null],
+		"reg_alpha": [0.0, null],
+		"sketch_eps": [0.0, 1.0],
+		"scale_pos_weight": [0.0, null],
+		"learning_rate": [0.0, 1.0],
+		"n_estimators": [1, null]
+	},
+	"lightgbm":
+	{
+		
+	}
+}

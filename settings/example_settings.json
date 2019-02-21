@@ -1,5 +1,5 @@
 {
-	"data":
+	"data_tools":
 	{
 		"path": "/Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/santander",
 		"train": "train.csv",
