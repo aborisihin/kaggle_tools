@@ -1,1 +1,1 @@
-__all__ = ['pipeline']
+__all__ = ['pipeline', 'gradient_boosting']

@@ -18,20 +18,21 @@ class KglToolsContext():
 
     Args:
         settings_path: Путь к файлу настроек
-        random_state: Инициализирующее random значение
 
     Attributes:
         settings (dict): Словарь с настройками окружения задачи
-        random_state (int): Инициализирующее random значение
     """
 
-    def __init__(self, settings_path: str, random_state: int = 0) -> None:
+    def __init__(self, settings_path: str) -> None:
         if not os.path.exists(settings_path):
             print('Settings file {} is not exist!'.format(settings_path))
             self.settings = None
             return
 
-        self.random_state = random_state
+        if 'random_state' in self.settings:
+            self.random_state = self.settings['random_state']
+        else:
+            self.random_state = 0
 
         with open(settings_path, 'r') as settings_file:
             self.settings = json.load(settings_file)
