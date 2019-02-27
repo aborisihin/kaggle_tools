@@ -5,10 +5,6 @@ Contains class for work with common task context
 import os
 import json
 
-from typing import Optional
-
-from kgltools.data_tools import DataTools
-
 __all__ = ['KglToolsContext']
 
 
@@ -32,19 +28,10 @@ class KglToolsContext(object):
         with open(settings_path, 'r') as settings_file:
             self.settings = json.load(settings_file)
 
-        if 'random_state' in self.settings:
-            self.random_state = self.settings['random_state']
-        else:
-            self.random_state = 0
+        self.random_state = self.settings.get('random_state', 0)
+        self.n_jobs = self.settings.get('n_jobs', -1)
 
-    def getDataTools(self) -> Optional[DataTools]:
-        """
-        Получить объект класса DataTools (data_tools.py)
-        """
-        if self.settings is None:
-            print('No settings found!')
-            return None
-        if 'data_tools' not in self.settings:
-            print('No "data_tools" settings found!')
-            return None
-        return DataTools(self.settings['data_tools'], self.random_state)
+
+class KglToolsContextChild(object):
+    def __init__(self):
+        pass

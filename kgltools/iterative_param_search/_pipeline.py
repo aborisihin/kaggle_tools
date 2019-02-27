@@ -4,13 +4,14 @@ Contains tools for iterative search for best parameters of model
 
 import os
 import json
-from typing import Generic, Union, List, Tuple
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
+from typing import Generic, Union, List, Tuple
 
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
 
+from ..context import KglToolsContext
 from ..logger import Logger
 
 
@@ -19,9 +20,10 @@ __all__ = ['IPSPipeline', 'IPSStageBase', 'IPSConstantSetter', 'IPSGridSearcher'
 
 class IPSPipeline(object):
     # from context:
-    # data, random_state, metrics_mapping, estimator_parameters_limits
+    # data, random_state, n_jobs, metrics_mapping, estimator_parameters_limits
 
-    def __init__(self,
+    def __init__(self, 
+        context: KglToolsContext,
                  estimator_class: Generic,
                  X: pd.DataFrame,
                  y: Union[pd.DataFrame, pd.Series],
