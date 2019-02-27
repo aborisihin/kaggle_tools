@@ -12,7 +12,7 @@ from kgltools.data_tools import DataTools
 __all__ = ['KglToolsContext']
 
 
-class KglToolsContext():
+class KglToolsContext(object):
     """ Класс контекста задачи
     Используется для поддержки общей структуры задач через трансляцию пользовательских настроек
 
@@ -29,13 +29,13 @@ class KglToolsContext():
             self.settings = None
             return
 
+        with open(settings_path, 'r') as settings_file:
+            self.settings = json.load(settings_file)
+
         if 'random_state' in self.settings:
             self.random_state = self.settings['random_state']
         else:
             self.random_state = 0
-
-        with open(settings_path, 'r') as settings_file:
-            self.settings = json.load(settings_file)
 
     def getDataTools(self) -> Optional[DataTools]:
         """

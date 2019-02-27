@@ -2,16 +2,15 @@
 Contains class for logging
 """
 
+import time
+
 __all__ = ['Logger']
 
 
-class Logger():
-    def __init__(self, stage_name: str = '', nesting_level: int = 0) -> None:
+class Logger(object):
+    def __init__(self, nesting_level: int = 0) -> None:
         self.nesting_level = nesting_level
-        self.stage_name = stage_name
-
-    def init(self) -> None:
-        self.log('{}'.format(self.stage_name))
+        self.start_time = 0
 
     def log(self, text: str) -> None:
         space = " " * (4 * self.nesting_level)
@@ -22,3 +21,9 @@ class Logger():
 
     def decrease_level(self) -> None:
         self.nesting_level = max(0, self.nesting_level - 1)
+
+    def start_timer(self):
+        self.start_time = time.time()
+
+    def log_timer(self):
+        self.log("Time spent: {:0.2f} sec".format(time.time() - self.start_time))

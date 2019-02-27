@@ -15,7 +15,7 @@ from sklearn.model_selection import train_test_split
 __all__ = ['DataTools']
 
 
-class DataTools():
+class DataTools(object):
     """ Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)
 
     Args:
