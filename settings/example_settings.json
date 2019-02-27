@@ -2,14 +2,14 @@
 	"random_state": 14,
 	"data_tools":
 	{
-		"path": "/Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/santander",
+		"path": "/path/to/data",
 		"train": "train.csv",
 		"test": "test.csv",
 		"submission_params":
 		{
 			"sample_file": "sample_submission.csv",
 			"target_fields": ["target"],
-			"submissions_dir": "/Volumes/sd_disk/Yandex.Disk.localized/ml_data/kaggle/santander/submissions",
+			"submissions_dir": "/path/to/submissions",
 			"pd_read_csv_params":
 			{
 			},
