@@ -5,7 +5,7 @@ Contains tools for iterative search for best parameters of model
 import math
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Union, List, Tuple
+from typing import Generic, Union, List, Tuple, Optional
 
 import pandas as pd
 from sklearn.model_selection import GridSearchCV
@@ -44,7 +44,7 @@ class IPSPipeline(KglToolsContextChild):
         self.verbose = verbose
 
         self.stages = []
-        self.fitted_params = None
+        self.fitted_params = dict()
         self.logger = Logger(nesting_level=0, verbose=self.verbose)
 
         self.metrics_mapping = self.context.extra_dicts['metrics_mapping']
@@ -56,20 +56,27 @@ class IPSPipeline(KglToolsContextChild):
         self.base_params['random_state'] = self.random_state
         self.base_params['n_jobs'] = self.n_jobs
 
-    def fit(self) -> None:
+    def fit(self, num_stages: Optional[int] = None) -> None:
         self.logger.log('IPSPipeline ({})'.format(self.estimator_classname))
         self.logger.start_timer()
 
         self.fitted_params = dict()
 
-        for stage_name, stage in self.stages:
+        stages_to_fit = [(s_name, s) for s_name, s in self.stages if s.fitted_params is None]
+        if num_stages is not None:
+            stages_to_fit = stages_to_fit[:num_stages]
+
+        if len(stages_to_fit) == 0:
+            self.logger.log('No stages to fit!')
+
+        for stage_name, stage in stages_to_fit:
             self.logger.log('Stage <{}>'.format(stage_name))
-            stage_params = stage.process({**self.base_params, **self.fitted_params})
-            self.fitted_params = {**self.fitted_params, **stage_params}
+            stage.fit({**self.base_params, **self.fitted_params})
+            self.fitted_params = {**self.fitted_params, **stage.fitted_params}
 
         self.logger.log_timer()
 
-    def add_stages(self, stage_descriptors: List[Tuple[object, dict]]) -> None:
+    def add_stages_list(self, stage_descriptors: List[Tuple[object, dict]]) -> None:
         for stage_object, stage_grid in stage_descriptors:
             self.add_stage(stage_object, stage_grid)
 
@@ -119,6 +126,11 @@ class IPSStageBase(object):
 
     def __init__(self) -> None:
         self.logger = Logger(nesting_level=1)
+        self.fitted_params = None
+        self.train_score_mean = None
+        self.train_score_std = None
+        self.test_score_mean = None
+        self.test_score_std = None
 
     def set_parent_pipeline(self, parent_pipeline: IPSPipeline) -> None:
         self.parent = parent_pipeline
@@ -128,7 +140,7 @@ class IPSStageBase(object):
         self.param_grid = param_grid
 
     @abstractmethod
-    def process(self, params: dict = {}) -> dict:
+    def fit(self, params: dict = {}) -> None:
         pass
 
 
@@ -137,9 +149,9 @@ class IPSConstantSetter(IPSStageBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-    def process(self, params: dict = {}) -> dict:
+    def fit(self, params: dict = {}) -> None:
         self.logger.log(self.param_grid)
-        return self.param_grid
+        self.fitted_params = self.param_grid
 
 
 class IPSGridSearcher(IPSStageBase):
@@ -147,7 +159,7 @@ class IPSGridSearcher(IPSStageBase):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
 
-    def process(self, params: dict = {}) -> dict:
+    def fit(self, params: dict = {}) -> None:
         self.logger.start_timer()
 
         train_mean, train_std, test_mean, test_std = 0.0, 0.0, 0.0, 0.0
@@ -162,17 +174,17 @@ class IPSGridSearcher(IPSStageBase):
             verbose=False)
         g_search.fit(self.parent.X, self.parent.y)
 
-        train_mean = g_search.cv_results_['mean_train_score'][g_search.best_index_]
-        train_std = g_search.cv_results_['std_train_score'][g_search.best_index_]
-        test_mean = g_search.cv_results_['mean_test_score'][g_search.best_index_]
-        test_std = g_search.cv_results_['std_test_score'][g_search.best_index_]
+        self.train_score_mean = g_search.cv_results_['mean_train_score'][g_search.best_index_]
+        self.train_score_std = g_search.cv_results_['std_train_score'][g_search.best_index_]
+        self.test_score_mean = g_search.cv_results_['mean_test_score'][g_search.best_index_]
+        self.test_score_std = g_search.cv_results_['std_test_score'][g_search.best_index_]
 
         self.logger.log_timer()
-        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(train_mean, train_std))
-        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(test_mean, test_std))
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean, self.train_score_std))
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean, self.test_score_std))
         self.logger.log(g_search.best_params_)
 
-        return g_search.best_params_
+        self.fitted_params = g_search.best_params_
 
 
 class IPSGridFineSearcher(IPSStageBase):
@@ -208,11 +220,17 @@ class IPSGridFineSearcher(IPSStageBase):
             parsed_param_grid[param_name] = grid
         return parsed_param_grid
 
-    def process(self, params: dict = {}) -> dict:
+    def fit(self, params: dict = {}) -> None:
         self.param_grid = self.parse_param_grid(params)
         self.logger.log('Parsed params: {}'.format(self.param_grid))
 
         gs = IPSGridSearcher()
         gs.set_parent_pipeline(self.parent)
         gs.set_param_grid(self.param_grid)
-        return gs.process(params)
+        gs.fit(params)
+
+        self.fitted_params = gs.fitted_params
+        self.train_score_mean = gs.train_score_mean
+        self.train_score_std = gs.train_score_std
+        self.test_score_mean = gs.test_score_mean
+        self.test_score_std = gs.test_score_std

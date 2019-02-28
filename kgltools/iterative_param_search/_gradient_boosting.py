@@ -27,14 +27,14 @@ class GBoostNTreesSearcher(IPSStageBase):
         super().__init__(*args, **kwargs)
         self.early_stopping_rounds = early_stopping_rounds
 
-    def process(self, params: dict = {}) -> dict:
+    def fit(self, params: dict = {}) -> None:
         if len(self.param_grid) != 1:
             self.logger.log('Wrong param_grid argument!')
             return dict()
 
         n_estimators_param_name = list(self.param_grid.keys())[0]
         max_n_estimators = list(self.param_grid.values())[0]
-        fitted_params = {n_estimators_param_name: 0}
+        self.fitted_params = {n_estimators_param_name: 0}
 
         self.logger.start_timer()
 
@@ -54,15 +54,13 @@ class GBoostNTreesSearcher(IPSStageBase):
                                seed=self.parent.random_state,
                                shuffle=self.parent.shuffle,
                                verbose_eval=False)
-            train_mean = cv_result.iloc[len(cv_result) - 1, 0]
-            train_std = cv_result.iloc[len(cv_result) - 1, 1]
-            test_mean = cv_result.iloc[len(cv_result) - 1, 2]
-            test_std = cv_result.iloc[len(cv_result) - 1, 3]
-            fitted_params[n_estimators_param_name] = len(cv_result)
+            self.train_score_mean = cv_result.iloc[len(cv_result) - 1, 0]
+            self.train_score_std = cv_result.iloc[len(cv_result) - 1, 1]
+            self.test_score_mean = cv_result.iloc[len(cv_result) - 1, 2]
+            self.test_score_std = cv_result.iloc[len(cv_result) - 1, 3]
+            self.fitted_params[n_estimators_param_name] = len(cv_result)
 
         self.logger.log_timer()
-        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(train_mean, train_std))
-        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(test_mean, test_std))
-        self.logger.log(fitted_params)
-
-        return fitted_params
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean, self.train_score_std))
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean, self.test_score_std))
+        self.logger.log(self.fitted_params)
