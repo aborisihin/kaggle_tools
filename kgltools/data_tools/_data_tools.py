@@ -6,15 +6,16 @@ import os
 from datetime import datetime
 from typing import Tuple, Optional
 
+import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 
-from ..context import KglToolsContext
+from ..context import KglToolsContext, KglToolsContextChild
 
 __all__ = ['DataTools']
 
 
-class DataTools(object):
+class DataTools(KglToolsContextChild):
     """ Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)
 
     Args:
@@ -29,7 +30,7 @@ class DataTools(object):
     """
 
     def __init__(self, context: KglToolsContext) -> None:
-        self.context = context
+        super().__init__(context)
         self.settings = context.settings.get('data_tools', dict())
         self.random_state = context.random_state
         self.X_train = None

@@ -60,10 +60,9 @@ class GBoostNTreesSearcher(IPSStageBase):
             test_std = cv_result.iloc[len(cv_result) - 1, 3]
             fitted_params[n_estimators_param_name] = len(cv_result)
 
-        if self.parent.verbose:
-            self.logger.log_timer()
-            self.logger.log('train: {:0.5f} (std={:0.5f})'.format(train_mean, train_std))
-            self.logger.log('test: {:0.5f} (std={:0.5f})'.format(test_mean, test_std))
-            self.logger.log(fitted_params)
+        self.logger.log_timer()
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(train_mean, train_std))
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(test_mean, test_std))
+        self.logger.log(fitted_params)
 
         return fitted_params

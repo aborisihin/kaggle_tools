@@ -14,7 +14,7 @@
 		"reg_alpha": [0.0, null],
 		"sketch_eps": [0.0, 1.0],
 		"scale_pos_weight": [0.0, null],
-		"learning_rate": [0.0, 1.0],
+		"learning_rate": [0.000001, 1.0],
 		"n_estimators": [1, null]
 	},
 	"lightgbm":
