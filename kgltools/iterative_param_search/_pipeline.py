@@ -6,7 +6,7 @@ import math
 from itertools import product
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
-from typing import Generic, Union, List, Tuple, Optional
+from typing import Union, List, Tuple, Optional, Callable
 
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, cross_validate
@@ -30,7 +30,7 @@ class IPSPipeline(KglToolsContextChild):
 
     def __init__(self,
                  context: KglToolsContext,
-                 estimator_class: Generic,
+                 estimator_class: Callable,
                  X: pd.DataFrame,
                  y: Union[pd.DataFrame, pd.Series],
                  metrics: str,
@@ -81,6 +81,9 @@ class IPSPipeline(KglToolsContextChild):
 
         self.logger.log_timer()
 
+    def get_best_estimator(self) -> object:
+        return self.estimator_class({**self.base_params, **self.fitted_params})
+
     def add_stages_list(self, stage_descriptors: List[Tuple[object, dict]]) -> None:
         for stage_object, stage_grid in stage_descriptors:
             self.add_stage(stage_object, stage_grid)
@@ -106,7 +109,9 @@ class IPSPipeline(KglToolsContextChild):
         stages_summary = list()
         for stage_name, stage_object in self.stages:
             stages_summary.append((stage_name, str(stage_object.fitted_params)))
-        stages_summary_df = pd.DataFrame(data=stages_summary, index=range(1, len(self.stages) + 1), columns=['stage_name', 'fit_result'])
+        stages_summary_df = pd.DataFrame(data=stages_summary,
+                                         index=range(1, len(self.stages) + 1),
+                                         columns=['stage_name', 'fit_result'])
         self.logger.log('IPSPipeline ({})'.format(self.estimator_class_name))
         self.logger.log(str(stages_summary_df))
 

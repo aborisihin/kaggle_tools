@@ -23,7 +23,7 @@ class Stacker(KglToolsContextChild):
                  context: KglToolsContext,
                  estimators: List[object],
                  metrics: str,
-                 predict_method: str = 'predict',
+                 predict_proba: bool = False,
                  n_folds: int = 5,
                  stratified: bool = True,
                  shuffle: bool = True,
@@ -31,7 +31,7 @@ class Stacker(KglToolsContextChild):
         super().__init__(context)
         self.estimators = estimators
         self.metrics = metrics
-        self.predict_method = predict_method
+        self.predict_method = 'predict_proba' if predict_proba else 'predict'
         self.n_folds = n_folds
         self.stratified = stratified
         self.shuffle = shuffle
@@ -74,8 +74,6 @@ class Stacker(KglToolsContextChild):
             self.logger.increase_level()
             self.logger.start_timer()
 
-            # X_train, y_train = X.values[train_idx, :], y.values[train_idx]
-            # X_test = X.values[test_idx, :]
             X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
             X_test = X.iloc[test_idx]
 
@@ -86,7 +84,10 @@ class Stacker(KglToolsContextChild):
                 fold_estimator.fit(X_train, y_train)
                 self.fitted_estimators[est_idx][fold_idx] = fold_estimator
                 fold_est_predict_method = getattr(fold_estimator, self.predict_method)
-                meta_values[test_idx, est_idx] = fold_est_predict_method(X_test)[:, 1]
+                predictions = fold_est_predict_method(X_test)
+                if self.predict_method == 'predict_proba':
+                    predictions = predictions[:, 1]
+                meta_values[test_idx, est_idx] = predictions
 
             self.logger.log_timer()
             self.logger.decrease_level()
@@ -114,7 +115,10 @@ class Stacker(KglToolsContextChild):
             est_predictions = np.zeros((len(X_test), len(folds)))
             for fold_idx, fold_estimator in enumerate(folds):
                 fold_est_predict_method = getattr(fold_estimator, self.predict_method)
-                est_predictions[:, fold_idx] = fold_est_predict_method(X_test)[:, 1]
+                predictions = fold_est_predict_method(X_test)
+                if self.predict_method == 'predict_proba':
+                    predictions = predictions[:, 1]
+                est_predictions[:, fold_idx] = predictions
             meta_values[:, est_idx] = est_predictions.mean(axis=1)
         meta_df = pd.DataFrame(data=meta_values,
                                index=X_test.index,
