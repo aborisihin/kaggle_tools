@@ -65,7 +65,7 @@ class DataTools(KglToolsContextChild):
             self.y_validate = y_v
             return (X_t, X_v, y_t, y_v)
 
-    def write_submission(self, predictions: np.ndarray) -> bool:
+    def write_submission(self, predictions: np.ndarray) -> None:
         """
         Запись файла с предсказаниями в заданном формате
 
@@ -78,10 +78,17 @@ class DataTools(KglToolsContextChild):
 
         if not os.path.exists(sample_submission_path):
             print('DataTools::write_submission(): sample submission file is not exist!')
-            return False
+            return
 
         sample_sbm = pd.read_csv(sample_submission_path, **submission_settings['pd_read_csv_params'])
         sample_sbm[submission_settings['target_fields']] = predictions
+
+        if not os.path.isdir(submission_settings['submissions_dir']):
+            try:
+                os.mkdir(submission_settings['submissions_dir'])
+            except OSError:
+                print('Can\'t create metasets directory!')
+                return
 
         sbm_filename = '{}_sbm.csv'.format(datetime.now().strftime("%Y-%m-%d_%H-%M"))
         smb_filepath = os.path.join(submission_settings['submissions_dir'], sbm_filename)
@@ -89,3 +96,26 @@ class DataTools(KglToolsContextChild):
         sample_sbm.to_csv(smb_filepath, **submission_settings['pd_write_csv_params'])
 
         print('save submission:\n{}'.format(sbm_filename))
+
+    def write_metaset(self, df: pd.DataFrame, filename: str) -> None:
+        metaset_settings = self.settings['metaset_params']
+
+        if not os.path.isdir(metaset_settings['metasets_dir']):
+            try:
+                os.mkdir(metaset_settings['metasets_dir'])
+            except OSError:
+                print('Can\'t create metasets directory!')
+                return
+
+        metaset_filepath = os.path.join(metaset_settings['metasets_dir'], filename)
+        df.to_csv(metaset_filepath, header=True, index=True)
+
+    def read_metaset(self, filename: str) -> Optional[pd.DataFrame]:
+        metaset_settings = self.settings['metaset_params']
+        metaset_filepath = os.path.join(metaset_settings['metasets_dir'], filename)
+
+        if not os.path.exists(metaset_filepath):
+            print('DataTools::read_metaset(): metaset file is not exist!')
+            return None
+
+        return pd.read_csv(metaset_filepath, index_col=0)

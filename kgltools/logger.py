@@ -3,6 +3,7 @@ Contains class for logging
 """
 
 import time
+import math
 
 __all__ = ['Logger']
 
@@ -31,4 +32,19 @@ class Logger(object):
     def log_timer(self):
         if not self.verbose:
             return
-        self.log("Time spent: {:0.2f} sec".format(time.time() - self.start_time))
+
+        time_spent = float(time.time() - self.start_time)
+
+        if time_spent < 60.0:
+            time_str = '{:0.2f}s'.format(time_spent)
+        elif time_spent < 3600.0:
+            time_m = int(math.floor(time_spent / 60))
+            time_s = int(round(time_spent - (time_m * 60)))
+            time_str = '{:d}m {:d}s'.format(time_m, time_s)
+        else:
+            time_h = int(math.floor(time_spent / 3600))
+            time_m = int(math.floor((time_spent - (time_h * 3600)) / 60))
+            time_s = int(round(time_spent - (time_h * 3600) - (time_m * 60)))
+            time_str = '{:d}h {:d}m {:d}s'.format(time_h, time_m, time_s)
+
+        self.log("Time spent: {}".format(time_str))

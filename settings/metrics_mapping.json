@@ -2,7 +2,7 @@
 	"roc_auc":
 	{
 		"xgboost.sklearn.XGBClassifier": "auc",
-		"lightgbm.LGBMClassifier": "auc",
-		"catboost.CatBoostClassifier": "AUC"
+		"lightgbm.sklearn.LGBMClassifier": "auc",
+		"catboost.core.CatBoostClassifier": "AUC"
 	}
 }

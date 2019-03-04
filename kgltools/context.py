@@ -5,7 +5,9 @@ Contains class for work with common task context
 import os
 import json
 
-__all__ = ['KglToolsContext']
+from typing import Optional
+
+__all__ = ['KglToolsContext', 'KglToolsContextChild']
 
 
 class KglToolsContext(object):
@@ -30,7 +32,7 @@ class KglToolsContext(object):
 
         self.random_state = self.settings.get('random_state', 0)
         self.n_jobs = self.settings.get('n_jobs', -1)
-        self.childs = list()
+        self.child_list = list()
 
         # load extra dicts
         cur_path = os.path.dirname(os.path.abspath(__file__))
@@ -49,7 +51,13 @@ class KglToolsContext(object):
                     self.extra_dicts[edn] = json.load(ed_file)
 
     def add_child(self, child: object) -> None:
-        self.childs.append(child)
+        self.child_list.append(child)
+
+    def get_child(self, child_type: type) -> Optional[object]:
+        for child in self.child_list:
+            if isinstance(child, child_type):
+                return child
+        return None
 
 
 class KglToolsContextChild(object):

@@ -1,0 +1,112 @@
+""" stacker module.
+Contains models stacking class
+"""
+
+from typing import Union, List, Optional
+from copy import deepcopy
+
+import numpy as np
+import pandas as pd
+
+from sklearn.model_selection import StratifiedKFold, KFold
+
+from ..context import KglToolsContext, KglToolsContextChild
+from ..logger import Logger
+from ..data_tools import DataTools
+
+__all__ = ['Stacker']
+
+
+class Stacker(KglToolsContextChild):
+
+    def __init__(self,
+                 context: KglToolsContext,
+                 estimators: List[object],
+                 metrics: str,
+                 n_folds: int = 5,
+                 stratified: bool = True,
+                 shuffle: bool = True,
+                 verbose: bool = True) -> None:
+        super().__init__(context)
+        self.estimators = estimators
+        self.metrics = metrics
+        self.n_folds = n_folds
+        self.stratified = stratified
+        self.shuffle = shuffle
+        self.verbose = verbose
+
+        self.random_state = self.context.random_state
+        self.n_jobs = self.context.n_jobs
+
+        self.logger = Logger(nesting_level=0, verbose=self.verbose)
+
+        # make folds
+        if self.stratified:
+            self.folds_maker = StratifiedKFold(n_splits=self.n_folds,
+                                               shuffle=self.shuffle,
+                                               random_state=self.random_state)
+        else:
+            self.folds_maker = KFold(n_splits=self.n_folds,
+                                     shuffle=self.shuffle,
+                                     random_state=self.random_state)
+
+        # self.fitted_estimators = [[None] * self.n_folds] * len(self.estimators)
+        self.fitted_estimators = [[None for _ in range(self.n_folds)] for _ in range(len(estimators))]
+
+    def fit(self,
+            X: pd.DataFrame,
+            y: Union[pd.DataFrame, pd.Series],
+            dump_file: Optional[str] = None) -> pd.DataFrame:
+        self.logger.log('Stacker: fit {} estimators on {} folds'.format(len(self.estimators), self.n_folds))
+
+        meta_values = np.zeros((X.shape[0], len(self.estimators)))
+        for fold_idx, (train_idx, test_idx) in enumerate(self.folds_maker.split(X, y)):
+            self.logger.log('Fold {}:'.format(fold_idx + 1))
+            self.logger.increase_level()
+            self.logger.start_timer()
+
+            X_train, y_train = X.values[train_idx, :], y.values[train_idx]
+            X_test = X.values[test_idx, :]
+
+            for est_idx, est in enumerate(self.estimators):
+                self.logger.log(type(est).__name__)
+
+                fold_estimator = deepcopy(est)
+                fold_estimator.fit(X_train, y_train)
+                self.fitted_estimators[est_idx][fold_idx] = fold_estimator
+                meta_values[test_idx, est_idx] = fold_estimator.predict_proba(X_test)[:, 1]
+
+            self.logger.log_timer()
+            self.logger.decrease_level()
+
+        meta_df = pd.DataFrame(data=meta_values,
+                               index=X.index,
+                               columns=[type(est).__name__ for est in self.estimators])
+
+        if dump_file is not None:
+            self.save_dump(meta_df, dump_file)
+
+        return meta_df
+
+    def transform(self,
+                  X_test: pd.DataFrame,
+                  dump_file: Optional[str] = None) -> pd.DataFrame:
+        meta_values = np.zeros((len(X_test), len(self.fitted_estimators)))
+        for est_idx, folds in enumerate(self.fitted_estimators):
+            est_predictions = np.zeros((len(X_test), len(folds)))
+            for fold_idx, fold_est in enumerate(folds):
+                est_predictions[:, fold_idx] = fold_est.predict_proba(X_test)[:, 1]
+            meta_values[:, est_idx] = est_predictions.mean(axis=1)
+        meta_df = pd.DataFrame(data=meta_values,
+                               index=X_test.index,
+                               columns=[type(est[0]).__name__ for est in self.fitted_estimators])
+
+        if dump_file is not None:
+            self.save_dump(meta_df, dump_file)
+
+        return meta_df
+
+    def save_dump(self, df: pd.DataFrame, filename: str) -> None:
+        data_tools = self.context.get_child(DataTools)
+        if data_tools:
+            data_tools.write_metaset(df, filename)

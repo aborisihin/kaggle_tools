@@ -1,24 +1,45 @@
 {
-	"xgboost.sklearn.XGBClassifier":
-	{
-		"eta": [0.0, 1.0],
-		"gamma": [0.0, null],
-		"max_depth": [1, null],
-		"min_child_weight": [0, null],
-		"max_delta_step": [0, null],
-		"subsample": [0.0, 1.0],
-		"colsample_bytree": [0.0, 1.0],
-		"colsample_bylevel": [0.0, 1.0],
-		"colsample_bynode": [0.0, 1.0],
-		"reg_lambda": [0.0, null],
-		"reg_alpha": [0.0, null],
-		"sketch_eps": [0.0, 1.0],
-		"scale_pos_weight": [0.0, null],
-		"learning_rate": [0.000001, 1.0],
-		"n_estimators": [1, null]
-	},
-	"lightgbm":
-	{
-		
-	}
+    "xgboost.sklearn.XGBClassifier":
+    {
+        "eta": [0.0, 1.0],
+        "gamma": [0.0, null],
+        "max_depth": [1, null],
+        "min_child_weight": [0.0, null],
+        "max_delta_step": [0, null],
+        "subsample": [0.000001, 1.0],
+        "colsample_bytree": [0.000001, 1.0],
+        "colsample_bylevel": [0.000001, 1.0],
+        "colsample_bynode": [0.000001, 1.0],
+        "reg_lambda": [0.0, null],
+        "reg_alpha": [0.0, null],
+        "sketch_eps": [0.0, 1.0],
+        "scale_pos_weight": [0.0, null],
+        "learning_rate": [0.000001, 1.0],
+        "n_estimators": [1, null]
+    },
+    "lightgbm.sklearn.LGBMClassifier":
+    {
+        "num_leaves": [2, null],
+        "max_depth": [1, null],
+        "learning_rate": [0.000001, 1.0],
+        "n_estimators": [1, null],
+        "subsample_for_bin": [1, null],
+        "min_split_gain": [0.0, null],
+        "min_child_weight": [0.0, null],
+        "min_child_samples": [1, null],
+        "subsample": [0.0, 1.0],
+        "subsample_freq": [-0.1, 1.0],
+        "colsample_bytree": [0.000001, 1.0],
+        "reg_alpha": [0.0, 1.0],
+        "reg_lambda": [0.0, 1.0]
+    },
+    "catboost.core.CatBoostClassifier":
+    {
+        "depth": [1, null],
+        "colsample_bylevel": [0.000001, 1.0],
+        "l2_leaf_reg": [0.0, null],
+        "scale_pos_weight": [0.0, null],
+        "learning_rate": [0.000001, 1.0],
+        "n_estimators": [1, null]
+    }
 }
