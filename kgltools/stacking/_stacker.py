@@ -23,6 +23,7 @@ class Stacker(KglToolsContextChild):
                  context: KglToolsContext,
                  estimators: List[object],
                  metrics: str,
+                 predict_method: str = 'predict',
                  n_folds: int = 5,
                  stratified: bool = True,
                  shuffle: bool = True,
@@ -30,6 +31,7 @@ class Stacker(KglToolsContextChild):
         super().__init__(context)
         self.estimators = estimators
         self.metrics = metrics
+        self.predict_method = predict_method
         self.n_folds = n_folds
         self.stratified = stratified
         self.shuffle = shuffle
@@ -56,7 +58,14 @@ class Stacker(KglToolsContextChild):
     def fit(self,
             X: pd.DataFrame,
             y: Union[pd.DataFrame, pd.Series],
-            dump_file: Optional[str] = None) -> pd.DataFrame:
+            dump_file: Optional[str] = None) -> Optional[pd.DataFrame]:
+        # check estimators
+        for est in self.estimators:
+            if (not hasattr(est, 'fit')) or (not hasattr(est, self.predict_method)):
+                log_mes = 'Estimator {} does\'t have methods "fit" or "{}"'
+                self.logger.log(log_mes.format(type(est), self.predict_method))
+                return None
+
         self.logger.log('Stacker: fit {} estimators on {} folds'.format(len(self.estimators), self.n_folds))
 
         meta_values = np.zeros((X.shape[0], len(self.estimators)))
@@ -65,8 +74,10 @@ class Stacker(KglToolsContextChild):
             self.logger.increase_level()
             self.logger.start_timer()
 
-            X_train, y_train = X.values[train_idx, :], y.values[train_idx]
-            X_test = X.values[test_idx, :]
+            # X_train, y_train = X.values[train_idx, :], y.values[train_idx]
+            # X_test = X.values[test_idx, :]
+            X_train, y_train = X.iloc[train_idx], y.iloc[train_idx]
+            X_test = X.iloc[test_idx]
 
             for est_idx, est in enumerate(self.estimators):
                 self.logger.log(type(est).__name__)
@@ -74,7 +85,8 @@ class Stacker(KglToolsContextChild):
                 fold_estimator = deepcopy(est)
                 fold_estimator.fit(X_train, y_train)
                 self.fitted_estimators[est_idx][fold_idx] = fold_estimator
-                meta_values[test_idx, est_idx] = fold_estimator.predict_proba(X_test)[:, 1]
+                fold_est_predict_method = getattr(fold_estimator, self.predict_method)
+                meta_values[test_idx, est_idx] = fold_est_predict_method(X_test)[:, 1]
 
             self.logger.log_timer()
             self.logger.decrease_level()
@@ -90,12 +102,19 @@ class Stacker(KglToolsContextChild):
 
     def transform(self,
                   X_test: pd.DataFrame,
-                  dump_file: Optional[str] = None) -> pd.DataFrame:
+                  dump_file: Optional[str] = None) -> Optional[pd.DataFrame]:
+        # check estimators
+        for folds in self.fitted_estimators:
+            if None in folds:
+                self.logger.log('Have unfitted estimators, can\'t make transform!')
+                return None
+
         meta_values = np.zeros((len(X_test), len(self.fitted_estimators)))
         for est_idx, folds in enumerate(self.fitted_estimators):
             est_predictions = np.zeros((len(X_test), len(folds)))
-            for fold_idx, fold_est in enumerate(folds):
-                est_predictions[:, fold_idx] = fold_est.predict_proba(X_test)[:, 1]
+            for fold_idx, fold_estimator in enumerate(folds):
+                fold_est_predict_method = getattr(fold_estimator, self.predict_method)
+                est_predictions[:, fold_idx] = fold_est_predict_method(X_test)[:, 1]
             meta_values[:, est_idx] = est_predictions.mean(axis=1)
         meta_df = pd.DataFrame(data=meta_values,
                                index=X_test.index,

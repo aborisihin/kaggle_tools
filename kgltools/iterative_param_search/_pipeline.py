@@ -102,6 +102,14 @@ class IPSPipeline(KglToolsContextChild):
         stage_object.set_param_grid(stage_grid)
         self.stages.append((stage_name, stage_object))
 
+    def print_stages(self) -> None:
+        stages_summary = list()
+        for stage_name, stage_object in self.stages:
+            stages_summary.append((stage_name, str(stage_object.fitted_params)))
+        stages_summary_df = pd.DataFrame(data=stages_summary, index=range(1, len(self.stages) + 1), columns=['stage_name', 'fit_result'])
+        self.logger.log('IPSPipeline ({})'.format(self.estimator_class_name))
+        self.logger.log(str(stages_summary_df))
+
     def check_parameter_list(self, param_grid: dict) -> List[str]:
         if self.estimator_class_name not in self.estimator_parameter_limits:
             return []  # nothing to check
