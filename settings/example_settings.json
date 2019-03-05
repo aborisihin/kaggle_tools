@@ -19,6 +19,10 @@
 				"header": true,
 				"index": false
 			}
+		},
+		"metaset_params":
+		{
+			"metasets_dir": "/path/to/meta_data"
 		}
 	}
 }

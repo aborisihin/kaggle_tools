@@ -1,7 +1,8 @@
 from .context import KglToolsContext
-from .data_tools import DataTools
+from .context import KglToolsContextChild
 from .logger import Logger
 
 __all__ = ['KglToolsContext',
+           'KglToolsContextChild',
            'DataTools',
            'Logger']
