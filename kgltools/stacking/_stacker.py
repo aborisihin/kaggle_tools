@@ -52,7 +52,6 @@ class Stacker(KglToolsContextChild):
                                      shuffle=self.shuffle,
                                      random_state=self.random_state)
 
-        # self.fitted_estimators = [[None] * self.n_folds] * len(self.estimators)
         self.fitted_estimators = [[None for _ in range(self.n_folds)] for _ in range(len(estimators))]
 
     def fit(self,
