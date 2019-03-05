@@ -57,7 +57,7 @@ class KglToolsContext(object):
                 with open(path, 'r') as ed_file:
                     self.extra_dicts[edn] = json.load(ed_file)
 
-    def add_child(self, child: object) -> None:
+    def add_child(self, child: 'KglToolsContextChild') -> None:
         """Add child object
         Добавление дочернего объекта
 
@@ -66,7 +66,7 @@ class KglToolsContext(object):
         """
         self.child_list.append(child)
 
-    def get_child(self, child_type: type) -> Optional[object]:
+    def get_child(self, child_type: type) -> Optional['KglToolsContextChild']:
         """Get child object
         Получение объекта заданного типа из списка дочерних
 

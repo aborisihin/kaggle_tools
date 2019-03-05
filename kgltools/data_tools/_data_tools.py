@@ -4,7 +4,7 @@ Contains DataTools class for data-oriented tasks
 
 import os
 from datetime import datetime
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 
 import numpy as np
 import pandas as pd
@@ -16,7 +16,8 @@ __all__ = ['DataTools']
 
 
 class DataTools(KglToolsContextChild):
-    """ Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)
+    """ Data manipulating class
+    Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)
 
     Args:
         context: Контекст окружения
@@ -25,8 +26,10 @@ class DataTools(KglToolsContextChild):
         context (KglToolsContext): Контекст окружения
         settings (dict): Словарь с настройками
         random_state (int): Инициализирующее random значение
-        X_train, y_train (pd.DataFrame): Обучающая выборка данных
-        X_validate, y_validate (pd.DataFrame): Валидационная выборка данных
+        X_train (pd.DataFrame): Обучающая выборка данных
+        y_train (Union[pd.DataFrame, pd.Series]): Обучающая выборка данных
+        X_validate, (pd.DataFrame): Валидационная выборка данных
+        y_validate (Union[pd.DataFrame, pd.Series]): Валидационная выборка данных
     """
 
     def __init__(self, context: KglToolsContext) -> None:
@@ -41,14 +44,17 @@ class DataTools(KglToolsContextChild):
     def get_validate_split(self,
                            X: pd.DataFrame,
                            y: Optional[pd.DataFrame] = None,
-                           validation_size: float = 0.2) -> Tuple[pd.DataFrame]:
-        """
+                           validation_size: float = 0.2) -> Tuple[pd.DataFrame, ...]:
+        """ Get validation split of the dataset
         Разбивка датасета на обучающую и валидационную выборки
 
         Args:
             X: Исходный датасет
             y: Датасет (вектор) с истинными ответами
             validation_size: Пропорция разбиения
+
+        Returns:
+            Кортеж датасетов (разбивок)
         """
         if y is None:
             X_t, X_v = train_test_split(X, test_size=validation_size, shuffle=True,
@@ -66,7 +72,7 @@ class DataTools(KglToolsContextChild):
             return (X_t, X_v, y_t, y_v)
 
     def write_submission(self, predictions: np.ndarray) -> None:
-        """
+        """ Write submissions file in proper format
         Запись файла с предсказаниями в заданном формате
 
         Args:
@@ -98,6 +104,13 @@ class DataTools(KglToolsContextChild):
         print('save submission:\n{}'.format(sbm_filename))
 
     def write_metaset(self, df: pd.DataFrame, filename: str) -> None:
+        """ Write metaset file
+        Запись датасета метапризнаков с указанным именем
+
+        Args:
+            df: Заданный датасет
+            filename: Имя файла датасета
+        """
         metaset_settings = self.settings['metaset_params']
 
         if not os.path.isdir(metaset_settings['metasets_dir']):
@@ -111,6 +124,15 @@ class DataTools(KglToolsContextChild):
         df.to_csv(metaset_filepath, header=True, index=True)
 
     def read_metaset(self, filename: str) -> Optional[pd.DataFrame]:
+        """ Read metaset file
+        Чтение датасета метапризнаков с указанным именем
+
+        Args:
+            filename: Имя файла датасета
+
+        Returns:
+            Датасет метапризнаков
+        """
         metaset_settings = self.settings['metaset_params']
         metaset_filepath = os.path.join(metaset_settings['metasets_dir'], filename)
 
