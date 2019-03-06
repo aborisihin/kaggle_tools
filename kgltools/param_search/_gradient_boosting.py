@@ -1,8 +1,8 @@
-""" iterative_param_search module.
-Contains tools for iterative search for best parameters of model
+""" gradient_boosting module.
+Contains stages for using in IPSPipeline
 """
 
-from ._pipeline import IPSStageBase
+from ._ips_pipeline import IPSStageBase
 
 import xgboost as xgb
 from xgboost.sklearn import XGBClassifier, XGBRegressor

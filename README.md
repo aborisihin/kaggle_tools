@@ -14,10 +14,10 @@ Useful tools for Kaggle competitions
 	- [DataTools](./kgltools/data_tools/_data_tools.py)<br>
 	Класс для работы с данными (загрузка, сохранение, разбивка и т.д.)<br>
 
-* iterative_param_search module
+* param_search module
 
-	- [IPSPipeline](./kgltools/iterative_param_search/_pipeline.py)<br>
-	Класс пайплайна итерационного подбора параметров. Помогает автоматизировать этапы настройки гиперпараметров модели.<br>
+	- [IPSPipeline](./kgltools/param_search/_ips_pipeline.py)<br>
+	Класс пайплайна итерационного подбора параметров. Помогает автоматизировать итерационные этапы настройки гиперпараметров модели.<br>
 
 * stacking module
 
