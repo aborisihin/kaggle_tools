@@ -4,7 +4,7 @@ Contains DataTools class for data-oriented tasks
 
 import os
 from datetime import datetime
-from typing import Tuple, Optional, Union
+from typing import Tuple, Optional
 
 import numpy as np
 import pandas as pd
@@ -61,7 +61,7 @@ class DataTools(KglToolsContextChild):
                                         random_state=self.random_state)
             self.X_train = X_t
             self.X_validate = X_v
-            return (X_t, X_v)
+            return X_t, X_v
         else:
             X_t, X_v, y_t, y_v = train_test_split(X, y, test_size=validation_size, shuffle=True,
                                                   stratify=y, random_state=self.random_state)
@@ -69,7 +69,7 @@ class DataTools(KglToolsContextChild):
             self.X_validate = X_v
             self.y_train = y_t
             self.y_validate = y_v
-            return (X_t, X_v, y_t, y_v)
+            return X_t, X_v, y_t, y_v
 
     def write_submission(self, predictions: np.ndarray) -> None:
         """ Write submissions file in proper format

@@ -76,10 +76,11 @@ class KglToolsContext(object):
         Returns:
             Дочерний объект или None в случае его отсутствия
         """
+        found_child: Optional['KglToolsContextChild'] = None
         for child in self.child_list:
             if isinstance(child, child_type):
-                return child
-        return None
+                found_child = child
+        return found_child
 
 
 class KglToolsContextChild(object):
