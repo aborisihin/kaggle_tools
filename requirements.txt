@@ -4,3 +4,4 @@ sklearn
 xgboost
 lightgbm
 catboost
+bayesian-optimization

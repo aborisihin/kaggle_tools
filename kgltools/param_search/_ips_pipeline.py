@@ -1,4 +1,4 @@
-""" iterative_param_search module.
+""" ips_pipeline module.
 Contains tools for iterative search for best parameters of model
 """
 
@@ -12,8 +12,9 @@ import pandas as pd
 from sklearn.model_selection import GridSearchCV, cross_validate
 from sklearn.model_selection import StratifiedKFold, KFold
 
-from ..context import KglToolsContext, KglToolsContextChild
+from ..context import KglToolsContext
 from ..logger import Logger
+from ._param_searcher import ParamSearcher
 
 
 __all__ = ['IPSPipeline',
@@ -26,44 +27,17 @@ __all__ = ['IPSPipeline',
            'ManualGridFineSearcher']
 
 
-class IPSPipeline(KglToolsContextChild):
+class IPSPipeline(ParamSearcher):
 
-    def __init__(self,
-                 context: KglToolsContext,
-                 estimator_class: Callable,
-                 X: pd.DataFrame,
-                 y: Union[pd.DataFrame, pd.Series],
-                 metrics: str,
-                 n_folds: int = 5,
-                 stratified: bool = True,
-                 shuffle: bool = True,
-                 base_params: dict = None,
-                 verbose: bool = True) -> None:
-        super().__init__(context)
-        self.estimator_class = estimator_class
-        self.X = X
-        self.y = y
-        self.metrics = metrics
-        self.n_folds = n_folds
-        self.stratified = stratified
-        self.shuffle = shuffle
-        self.base_params = base_params if base_params is not None else dict()
-        self.verbose = verbose
-
-        self.random_state = self.context.random_state
-        self.n_jobs = self.context.n_jobs
-        self.metrics_mapping = self.context.extra_dicts['metrics_mapping']
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.stages = []
         self.estimator_parameter_limits = self.context.extra_dicts['estimator_parameter_limits']
 
-        self.stages = []
-        self.fitted_params = dict()
-        self.logger = Logger(nesting_level=0, verbose=self.verbose)
-        self.estimator_class_name = '{}.{}'.format(estimator_class.__module__, estimator_class.__name__)
-        self.estimator_metrics = self.metrics_mapping[metrics][self.estimator_class_name]
+    def fit(self) -> None:
+        self.fit_next(len(self.stages))
 
-        self.base_params['random_state'] = self.random_state
-
-    def fit(self, num_stages: Optional[int] = None) -> None:
+    def fit_next(self, num_stages: Optional[int] = None) -> None:
         self.logger.log('IPSPipeline ({})'.format(self.estimator_class_name))
         self.logger.start_timer()
 
@@ -80,9 +54,6 @@ class IPSPipeline(KglToolsContextChild):
             self.fitted_params.update(stage.fitted_params)
 
         self.logger.log_timer()
-
-    def get_best_estimator(self) -> object:
-        return self.estimator_class({**self.base_params, **self.fitted_params})
 
     def add_stages_list(self, stage_descriptors: List[Tuple[object, dict]]) -> None:
         for stage_object, stage_grid in stage_descriptors:
