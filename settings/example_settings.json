@@ -24,5 +24,14 @@
 		{
 			"metasets_dir": "/path/to/meta_data"
 		}
+	},
+	"logger":
+	{
+		"telegram_notifications":
+		{
+			"enabled": true,
+			"bot_token": "token",
+			"chat_id": "chat_id"
+		}
 	}
 }

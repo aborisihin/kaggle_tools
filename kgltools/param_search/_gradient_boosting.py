@@ -80,11 +80,13 @@ class GBoostNTreesSearcher(IPSStageBase):
                                early_stopping_rounds=self.early_stopping_rounds,
                                seed=self.parent.random_state,
                                verbose_eval=False)
+            means = cv_result['{}-mean'.format(self.parent.estimator_metrics)]
+            stds = cv_result['{}-stdv'.format(self.parent.estimator_metrics)]
             self.train_score_mean = 0.0
             self.train_score_std = 0.0
-            self.test_score_mean = cv_result['{}-mean'.format(self.parent.estimator_metrics)].iloc[-1]
-            self.test_score_std = cv_result['{}-stdv'.format(self.parent.estimator_metrics)].iloc[-1]
-            self.fitted_params = {n_estimators_param_name: len(cv_result)}
+            self.test_score_mean = means[-1]
+            self.test_score_std = stds[-1]
+            self.fitted_params = {n_estimators_param_name: len(means)}
         elif self.parent.estimator_class in (CatBoostClassifier, CatBoostRegressor):
             modified_params['eval_metric'] = self.parent.estimator_metrics
             # no cat features!
@@ -105,7 +107,9 @@ class GBoostNTreesSearcher(IPSStageBase):
             self.test_score_std = cv_result['test-{}-std'.format(self.parent.estimator_metrics)].iloc[-1]
             self.fitted_params = {n_estimators_param_name: len(cv_result)}
 
-        self.logger.log_timer()
-        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean, self.train_score_std))
-        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean, self.test_score_std))
-        self.logger.log(self.fitted_params)
+        self.logger.log_timer(tg_send=True)
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean,
+                                                              self.train_score_std), tg_send=True)
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean,
+                                                             self.test_score_std), tg_send=True)
+        self.logger.log(self.fitted_params, tg_send=True)

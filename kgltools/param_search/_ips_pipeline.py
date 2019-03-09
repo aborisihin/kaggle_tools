@@ -6,13 +6,12 @@ import math
 from itertools import product
 from collections.abc import Iterable
 from abc import ABCMeta, abstractmethod
-from typing import Union, List, Tuple, Optional, Callable
+from typing import List, Tuple, Optional, Type
 
 import pandas as pd
 from sklearn.model_selection import GridSearchCV, cross_validate
 from sklearn.model_selection import StratifiedKFold, KFold
 
-from ..context import KglToolsContext
 from ..logger import Logger
 from ._param_searcher import ParamSearcher
 
@@ -38,7 +37,7 @@ class IPSPipeline(ParamSearcher):
         self.fit_next(len(self.stages))
 
     def fit_next(self, num_stages: Optional[int] = None) -> None:
-        self.logger.log('IPSPipeline ({})'.format(self.estimator_class_name))
+        self.logger.log('IPSPipeline ({})'.format(self.estimator_class_name), tg_send=True)
         self.logger.start_timer()
 
         stages_to_fit = [(s_name, s) for s_name, s in self.stages if s.fitted_params is None]
@@ -53,7 +52,7 @@ class IPSPipeline(ParamSearcher):
             stage.fit({**self.base_params, **self.fitted_params})
             self.fitted_params.update(stage.fitted_params)
 
-        self.logger.log_timer()
+        self.logger.log_timer(tg_send=True)
 
     def add_stages_list(self, stage_descriptors: List[Tuple[object, dict]]) -> None:
         for stage_object, stage_grid in stage_descriptors:
@@ -115,8 +114,8 @@ class IPSStageBase(object):
 
     __metaclass__ = ABCMeta
 
-    def __init__(self, *args, **kwargs) -> None:
-        self.logger = Logger(nesting_level=1)
+    def __init__(self) -> None:
+        self.logger = None
         self.fitted_params = None
         self.train_score_mean = None
         self.train_score_std = None
@@ -127,7 +126,10 @@ class IPSStageBase(object):
 
     def set_parent_pipeline(self, parent_pipeline: IPSPipeline) -> None:
         self.parent = parent_pipeline
-        self.logger.verbose = self.parent.verbose
+        self.logger = Logger(self.parent.context,
+                             self.__class__,
+                             nesting_level=1,
+                             verbose=self.parent.verbose)
 
     def set_param_grid(self, param_grid: dict) -> None:
         self.param_grid = param_grid
@@ -143,7 +145,7 @@ class ConstantSetter(IPSStageBase):
         super().__init__(*args, **kwargs)
 
     def fit(self, params: dict) -> None:
-        self.logger.log(self.param_grid)
+        self.logger.log(self.param_grid, tg_send=True)
         self.fitted_params = self.param_grid
 
 
@@ -170,10 +172,12 @@ class GridSearcher(IPSStageBase):
         self.test_score_mean = g_search.cv_results_['mean_test_score'][g_search.best_index_]
         self.test_score_std = g_search.cv_results_['std_test_score'][g_search.best_index_]
 
-        self.logger.log_timer()
-        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean, self.train_score_std))
-        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean, self.test_score_std))
-        self.logger.log(g_search.best_params_)
+        self.logger.log_timer(tg_send=True)
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean,
+                                                              self.train_score_std), tg_send=True)
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean,
+                                                             self.test_score_std), tg_send=True)
+        self.logger.log(g_search.best_params_, tg_send=True)
 
         self.fitted_params = g_search.best_params_
 
@@ -213,10 +217,12 @@ class ManualGridSearcher(IPSStageBase):
             scores_list.append((cv_result['train_score'].mean(), cv_result['train_score'].std(),
                                 cv_result['test_score'].mean(), cv_result['test_score'].std()))
 
-            self.logger.log('Check {}'.format(current_params))
+            self.logger.log('Check {}'.format(current_params), tg_send=True)
             self.logger.increase_level()
-            self.logger.log('train: {:0.5f} (std={:0.5f})'.format(scores_list[-1][0], scores_list[-1][1]))
-            self.logger.log('test: {:0.5f} (std={:0.5f})'.format(scores_list[-1][2], scores_list[-1][3]))
+            self.logger.log('train: {:0.5f} (std={:0.5f})'.format(scores_list[-1][0],
+                                                                  scores_list[-1][1]), tg_send=True)
+            self.logger.log('test: {:0.5f} (std={:0.5f})'.format(scores_list[-1][2],
+                                                                 scores_list[-1][3]), tg_send=True)
             self.logger.decrease_level()
 
         test_scores_list = [s[2] for s in scores_list]
@@ -228,10 +234,12 @@ class ManualGridSearcher(IPSStageBase):
         self.test_score_std = scores_list[best_idx][3]
         self.fitted_params = pg_list[best_idx]
 
-        self.logger.log_timer()
-        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean, self.train_score_std))
-        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean, self.test_score_std))
-        self.logger.log(str(self.fitted_params))
+        self.logger.log_timer(tg_send=True)
+        self.logger.log('train: {:0.5f} (std={:0.5f})'.format(self.train_score_mean,
+                                                              self.train_score_std), tg_send=True)
+        self.logger.log('test: {:0.5f} (std={:0.5f})'.format(self.test_score_mean,
+                                                             self.test_score_std), tg_send=True)
+        self.logger.log(str(self.fitted_params), tg_send=True)
 
 
 class GridFineSearcherBase(IPSStageBase):
@@ -276,9 +284,9 @@ class GridFineSearcherBase(IPSStageBase):
             parsed_param_grid[param_name] = grid
         return parsed_param_grid
 
-    def fit_base(self, params: dict, grid_searcher: IPSStageBase) -> None:
+    def fit_base(self, params: dict, grid_searcher: Type[IPSStageBase]) -> None:
         self.parsed_param_grid = self.parse_param_grid(params)
-        self.logger.log('Parsed params: {}'.format(self.parsed_param_grid))
+        self.logger.log('Parsed params: {}'.format(self.parsed_param_grid), tg_send=True)
 
         gs = grid_searcher()
         gs.set_parent_pipeline(self.parent)

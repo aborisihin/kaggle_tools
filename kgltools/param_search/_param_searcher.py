@@ -3,7 +3,11 @@ Contains base class for estrimator parameters search
 """
 
 from abc import ABCMeta, abstractmethod
+from typing import Union, Type, Any
 
+import pandas as pd
+
+from ..logger import Logger
 from ..context import KglToolsContext, KglToolsContextChild
 
 __all__ = ['ParamSearcher']
@@ -11,11 +15,11 @@ __all__ = ['ParamSearcher']
 
 class ParamSearcher(KglToolsContextChild):
 
-	__metaclass__ = ABCMeta
+    __metaclass__ = ABCMeta
 
-	def __init__(self,
+    def __init__(self,
                  context: KglToolsContext,
-                 estimator_class: Callable,
+                 estimator_class: Type[Any],
                  X: pd.DataFrame,
                  y: Union[pd.DataFrame, pd.Series],
                  metrics: str,
@@ -24,8 +28,8 @@ class ParamSearcher(KglToolsContextChild):
                  shuffle: bool = True,
                  base_params: dict = None,
                  verbose: bool = True) -> None:
-		super().__init__(context)
-		self.estimator_class = estimator_class
+        super().__init__(context)
+        self.estimator_class = estimator_class
         self.X = X
         self.y = y
         self.metrics = metrics
@@ -38,19 +42,19 @@ class ParamSearcher(KglToolsContextChild):
         self.random_state = self.context.random_state
         self.n_jobs = self.context.n_jobs
 
-        self.logger = Logger(nesting_level=0, verbose=self.verbose)
+        self.logger = Logger(self.context, self.__class__, nesting_level=0, verbose=self.verbose)
         self.estimator_class_name = '{}.{}'.format(estimator_class.__module__, estimator_class.__name__)
         self.estimator_metrics = self.context.extra_dicts['metrics_mapping'][metrics][self.estimator_class_name]
 
         self.base_params['random_state'] = self.random_state
         self.fitted_params = dict()
 
-	@abstractmethod
+    @abstractmethod
     def fit(self) -> None:
         pass
 
     def get_best_params(self) -> dict:
-        return self.best_params
+        return self.fitted_params
 
     def get_best_model(self) -> object:
         return self.estimator_class({**self.base_params, **self.fitted_params})

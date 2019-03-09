@@ -40,7 +40,7 @@ class Stacker(KglToolsContextChild):
         self.random_state = self.context.random_state
         self.n_jobs = self.context.n_jobs
 
-        self.logger = Logger(nesting_level=0, verbose=self.verbose)
+        self.logger = Logger(self.context, self.__class__, nesting_level=0, verbose=self.verbose)
 
         # make folds
         if self.stratified:
@@ -65,11 +65,12 @@ class Stacker(KglToolsContextChild):
                 self.logger.log(log_mes.format(type(est), self.predict_method))
                 return None
 
-        self.logger.log('Stacker: fit {} estimators on {} folds'.format(len(self.estimators), self.n_folds))
+        self.logger.log('Stacker: fit {} estimators on {} folds'.format(len(self.estimators),
+                                                                        self.n_folds), tg_send=True)
 
         meta_values = np.zeros((X.shape[0], len(self.estimators)))
         for fold_idx, (train_idx, test_idx) in enumerate(self.folds_maker.split(X, y)):
-            self.logger.log('Fold {}:'.format(fold_idx + 1))
+            self.logger.log('Fold {}:'.format(fold_idx + 1), tg_send=True)
             self.logger.increase_level()
             self.logger.start_timer()
 
@@ -88,7 +89,7 @@ class Stacker(KglToolsContextChild):
                     predictions = predictions[:, 1]
                 meta_values[test_idx, est_idx] = predictions
 
-            self.logger.log_timer()
+            self.logger.log_timer(tg_send=True)
             self.logger.decrease_level()
 
         meta_df = pd.DataFrame(data=meta_values,

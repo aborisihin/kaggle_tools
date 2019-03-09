@@ -5,3 +5,4 @@ xgboost
 lightgbm
 catboost
 bayesian-optimization
+python-telegram-bot
