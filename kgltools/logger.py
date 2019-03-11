@@ -5,7 +5,7 @@ Contains class for logging
 import time
 import math
 
-from typing import Type, Any
+from typing import Type, Any, Union
 
 from telegram import Bot
 
@@ -33,14 +33,15 @@ class Logger(KglToolsContextChild):
         verbose (bool): Флаг доступности вывода сообщений в лог
         start_time (float): Значение стартовой отсечки для подсчета используемого времени
     """
+
     def __init__(self,
                  context: KglToolsContext,
-                 owner: Type[Any],
+                 owner: Union[Type[Any], str],
                  nesting_level: int = 0,
                  verbose: bool = True) -> None:
         super().__init__(context)
         self.settings = context.settings.get('logger', dict())
-        self.owner_name = '{}'.format(owner.__name__)
+        self.owner_name = owner if isinstance(owner, str) else '{}'.format(owner.__name__)
         self.nesting_level = nesting_level
         self.verbose = verbose
         self.start_time = 0
@@ -48,12 +49,11 @@ class Logger(KglToolsContextChild):
         self.telegram_chat_id = None
         self.telegram_bot = None
 
-        if 'telegram_notifications' in self.settings:
-            tg_settings = self.settings['telegram_notifications']
-            if tg_settings.get('enabled', False):
-                if 'telegram_bot_token' in self.settings:
-                    self.telegram_bot = Bot(token=self.settings['telegram_bot_token'])
-                self.telegram_chat_id = self.settings.get('chat_id', '')
+        tg_settings = self.settings.get('telegram_notifications', None)
+        if tg_settings and tg_settings.get('enabled', False):
+            if 'bot_token' in tg_settings:
+                self.telegram_bot = Bot(token=tg_settings['bot_token'])
+            self.telegram_chat_id = tg_settings.get('chat_id', '')
 
     def log(self, text: str, tg_send: bool = False) -> None:
         """Print message in log
@@ -67,12 +67,22 @@ class Logger(KglToolsContextChild):
         space = " " * (4 * self.nesting_level)
         print("{}{}".format(space, text))
 
-        if tg_send and self.telegram_bot:
+        if tg_send:
+            self.telegram_log(text)
+
+    def telegram_log(self, text: str) -> None:
+        if self.telegram_bot:
             tg_message = '<b>{}</b>\n{}'.format(self.owner_name, text)
-            try:
-                self.telegram_bot.send_message(text=tg_message, chat_id=self.telegram_chat_id, parse_mode='html')
-            except Exception as ex:
-                self.logger.log('telegram bot exception: {}'.format(str(ex)))
+            for _ in range(5):  # 5 attempts
+                try:
+                    self.telegram_bot.send_message(text=tg_message,
+                                                   chat_id=self.telegram_chat_id,
+                                                   parse_mode='html')
+                except Exception as ex:
+                    self.log('Exception caught while sending telegram message: {}'.format(type(ex).__name__))
+                    time.sleep(1)
+                else:
+                    break
 
     def increase_level(self) -> None:
         """Increase messages indent
