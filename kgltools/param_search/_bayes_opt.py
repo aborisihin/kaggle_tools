@@ -96,4 +96,3 @@ class BayesianOptimizer(ParamSearcher):
             if (self.verbose_level is not None) and (self.callback_counter % self.verbose_level == 0):
                 self.logger.log('Steps done: {}. Max target: {}'.format(self.callback_counter,
                                                                         instance.max['target']), tg_send=True)
-                self.logger.log_timer(tg_send=True)

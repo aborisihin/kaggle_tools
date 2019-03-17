@@ -31,7 +31,9 @@ class Logger(KglToolsContextChild):
         owner_name (str): Имя класса-владельца
         nesting_level (int): Значение отступа сообщений
         verbose (bool): Флаг доступности вывода сообщений в лог
-        start_time (float): Значение стартовой отсечки для подсчета используемого времени
+        start_time_stack (List[float]): Стек значений стартовых отсечек для подсчета используемого времени
+        telegram_chat_id (str): Идентификатор чата для отправки сообщений в telegram
+        telegram_bot (telegram.Bot): Объект telegram бота
     """
 
     def __init__(self,
@@ -44,7 +46,7 @@ class Logger(KglToolsContextChild):
         self.owner_name = owner if isinstance(owner, str) else '{}'.format(owner.__name__)
         self.nesting_level = nesting_level
         self.verbose = verbose
-        self.start_time = 0
+        self.start_time_stack = list()
 
         self.telegram_chat_id = None
         self.telegram_bot = None
@@ -61,6 +63,7 @@ class Logger(KglToolsContextChild):
 
         Args:
             text - текст сообщения
+            tg_send - флаг отправки сообщения в telegram
         """
         if not self.verbose:
             return
@@ -71,6 +74,12 @@ class Logger(KglToolsContextChild):
             self.telegram_log(text)
 
     def telegram_log(self, text: str) -> None:
+        """Send message via telegram bot
+        Отправка сообщения в telegram
+
+        Args:
+            text - текст сообщения
+        """
         if self.telegram_bot:
             tg_message = '<b>{}</b>\n{}'.format(self.owner_name, text)
             for _ in range(5):  # 5 attempts
@@ -100,16 +109,23 @@ class Logger(KglToolsContextChild):
         """Start timing
         Запуск отсчета используемого времени
         """
-        self.start_time = time.time()
+        self.start_time_stack.append(time.time())
 
-    def log_timer(self, tg_send: bool = False) -> None:
+    def log_timer(self, prefix_mes: str = '', tg_send: bool = False) -> None:
         """Log tmer value
         Вывод в лог значение используемого времени
+
+        Args:
+            prefix mes - текст сообщения
+            tg_send - флаг отправки сообщения в telegram
         """
+        if len(self.start_time_stack) == 0:
+            return
         if not self.verbose:
+            self.start_time_stack.pop()
             return
 
-        time_spent = float(time.time() - self.start_time)
+        time_spent = float(time.time() - self.start_time_stack.pop())
 
         if time_spent < 60.0:
             time_str = '{:0.2f}s'.format(time_spent)
@@ -123,4 +139,7 @@ class Logger(KglToolsContextChild):
             time_s = int(round(time_spent - (time_h * 3600) - (time_m * 60)))
             time_str = '{:d}h {:d}m {:d}s'.format(time_h, time_m, time_s)
 
-        self.log("Time spent: {}".format(time_str), tg_send)
+        if len(prefix_mes):
+            self.log("{}. Time spent: {}".format(prefix_mes, time_str), tg_send)
+        else:
+            self.log("Time spent: {}".format(time_str), tg_send)

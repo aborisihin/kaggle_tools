@@ -78,7 +78,7 @@ class Stacker(KglToolsContextChild):
             X_test = X.iloc[test_idx]
 
             for est_idx, est in enumerate(self.estimators):
-                self.logger.log(type(est).__name__)
+                self.logger.start_timer()
 
                 fold_estimator = deepcopy(est)
                 fold_estimator.fit(X_train, y_train)
@@ -88,6 +88,8 @@ class Stacker(KglToolsContextChild):
                 if self.predict_method == 'predict_proba':
                     predictions = predictions[:, 1]
                 meta_values[test_idx, est_idx] = predictions
+
+                self.logger.log_timer(prefix_mes=type(est).__name__, tg_send=True)
 
             self.logger.log_timer(tg_send=True)
             self.logger.decrease_level()
